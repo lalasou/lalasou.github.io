@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-    <script src="qrcode.js"></script>
+    <title>登录学习</title>
     <style>
         .wx{
-            font-size: 30px;
+            font-size: 60px;
             color: red;
         }
 		body {
@@ -361,6 +360,7 @@
     </style>
 </head>
 <body>
+<div id="wx" class="wx"></div>
 <p class="word">学习强国</p>
 	<div class="tree">
 		<div class="star">
@@ -425,26 +425,14 @@
     <p class="word2">1.如果该页面未成功换起学习强国app，请刷新本页面</p>
     <p class="word2">2.如果首次登录请回到公众号点击"开始学习"</p>
     <p class="word2">3.第二天可自动学习，无需手动处理 其他的不用点！！！</p>
-    <div class="word">
-    <button><a id="login" href="#"><h1>点击登录跳转学习强国app</h1></a></button>
-    </div>
-<div id="wx" class="wx"></div>
-<div id="qrcode" class="word1">
-    <img id="img" src="#"  alt="#"/>
-</div>      
+    <p class="word2">3.不要传播 低调使用！</p>
 </body>
 <script>
     function load() {
         if (isWechat()){
             document.getElementById("wx").innerText = "当前为微信环境，请点击右上角浏览器中打开"
         }
-        let search = window.location.search
-        search = search.substring(1,search.length)
-        document.getElementById("login").setAttribute("href","dtxuexi://appclient/page/study_feeds?url="+search)
-        console.log(unescape(search))
-        let imgBase64 = jrQrcode.getQrBase64(unescape(search), {});
-        document.getElementById("img").setAttribute("src",imgBase64)
-        document.getElementById("login").click()
+        window.location.href ='dtxuexi://appclient/page/study_feeds' + window.location.search
     }
     function isWechat() {
         return /MicroMessenger/i.test(window.navigator.userAgent);
