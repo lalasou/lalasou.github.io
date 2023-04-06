@@ -2,7 +2,8 @@
 <html xmlns="/www.w3.org/1999/xhtml">
   <head id="Head1">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <script
+    <script src="qrcode.js"></script>
+	<script
       type="text/javascript"
       src="http://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"
     ></script>
@@ -56,12 +57,10 @@
       ap.play();
     </script>
     <div id="qrcode"></div>
-    <script>
-  jQuery("#qrcode").qrcode({
-    width: 300,
-    height: 300,
-    text: window.location.href
-  });
-</script>
+	<img id="img" src="#"  alt="#"/>
   </body>
+  <script>
+  let imgBase64 = jrQrcode.getQrBase64(unescape(window.location.href), {});
+  document.getElementById("img").setAttribute("src",imgBase64)
+  </script>
 </html>
