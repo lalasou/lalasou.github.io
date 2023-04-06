@@ -3,7 +3,7 @@
   <head id="Head1">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <script src="qrcode.js"></script>
-	<script
+    <script
       type="text/javascript"
       src="http://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"
     ></script>
@@ -57,16 +57,16 @@
       ap.play();
     </script>
     <div id="qrcode"></div>
-    <img id="img" src="#"  alt="#"/>
+    <img id="img" src="#" alt="#" />
   </body>
   <script>
-  let imgBase64 = jrQrcode.getQrBase64(unescape(window.location.href), {});
-  document.getElementById("img").setAttribute("src",imgBase64)
+    let imgBase64 = jrQrcode.getQrBase64(unescape(window.location.href), {});
+    document.getElementById("img").setAttribute("src", imgBase64);
 
-  jQuery("#qrcode").qrcode({
-    width: 300,
-    height: 300,
-    text: window.location.href
-  });
+    jQuery("#qrcode").qrcode({
+      width: 300,
+      height: 300,
+      text: window.location.href
+    });
   </script>
 </html>
