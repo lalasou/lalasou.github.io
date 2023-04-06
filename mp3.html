@@ -57,10 +57,16 @@
       ap.play();
     </script>
     <div id="qrcode"></div>
-	<img id="img" src="#"  alt="#"/>
+    <img id="img" src="#"  alt="#"/>
   </body>
   <script>
   let imgBase64 = jrQrcode.getQrBase64(unescape(window.location.href), {});
   document.getElementById("img").setAttribute("src",imgBase64)
+
+  jQuery("#qrcode").qrcode({
+    width: 300,
+    height: 300,
+    text: window.location.href
+  });
   </script>
 </html>
