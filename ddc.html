@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>称重仪表 - 实时显示</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --led-on: #00ff41;
+  --led-off: #004f10;
+  --glass: #0a0a0a;
+  --panel-bg: #111;
+  --text-color: #eee;
+  --button-bg: #222;
+  --button-hover: #333;
+  --border-color: #222;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(to bottom, #0a1929, #0d1e2d);
+  color: var(--text-color);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  min-width: 360px;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0px auto 0px;
+  padding: 15px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel {
+  background: radial-gradient(circle at center, var(--glass) 60%, #000 100%);
+  border: 2px solid #ffa500cf;
+  border-radius: 12px;
+  padding: 20px 20px 20px 2px;
+  box-shadow: 0 0 20px #00ff41a6;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  isolation: isolate;
+  flex-shrink: 0;
+}
+
+/* 重量显示区域 */
+.weight-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
+  padding-right: 35px;
+}
+
+.digits-box {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.led {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(34px, 8.333vw, 45px);
+  letter-spacing: 0.08em;
+  color: var(--led-on);
+  text-shadow: 0 0 4px var(--led-on), 0 0 10px var(--led-on);
+  text-align: right;
+  white-space: nowrap;
+  display: block;
+  min-width: 240px;
+  line-height: 1.2;
+}
+
+.unit {
+  margin-left: 3px;
+  font-size: clamp(16px, 4vw, 24px);
+  opacity: 0.8;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+/* 稳定指示灯区域 */
+.stable-group {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+}
+
+.stable-lamp {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transition: background .3s ease;
+  margin-left: 6px;
+  margin-right: 2px;
+}
+
+.stable-lamp.on {
+  background: #00ff41;
+  box-shadow: 0 0 6px #00ff41;
+}
+
+.stable-lamp.off {
+  background: #004f10;
+}
+
+.stable-text {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 10px;
+  color: #888;
+  transition: color .3s ease;
+}
+
+.stable-text.on {
+  color: var(--led-on);
+}
+
+/* 状态指示器 */
+.status-indicator {
+  font-size: .85rem;
+  color: #888;
+  text-align: center;
+  padding: 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  margin-top: 0px;
+  flex-shrink: 0;
+}
+
+.connection-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.connection-dot.connecting {
+  background: #ffcc00;
+  box-shadow: 0 0 8px #ffcc00;
+}
+
+.connection-dot.connected {
+  background: #00ff41;
+  box-shadow: 0 0 8px #00ff41;
+}
+
+.connection-dot.disconnected {
+  background: #ff3300;
+  box-shadow: 0 0 8px #ff3300;
+}
+
+/* 历史记录区域 */
+.history-section {
+  margin: 5px auto 1px;
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+  padding: 10px 25px;
+  background: rgba(20, 30, 40, 0.7);
+  border-bottom: 1px solid rgba(255, 165, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.history-title {
+  font-weight: 400;
+  margin: 0;
+  font-size: 1.2rem;
+  color: #ffa500;
+}
+
+.refresh-btn {
+  background: var(--button-bg);
+  color: #aaa;
+  border: 1px solid #00ff41a6;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.refresh-btn:hover {
+  border: 1px solid #00ff48;
+  background: var(--button-hover);
+  color: #ddd;
+}
+
+.refresh-btn:active {
+  transform: translateY(1px);
+  border: 1px solid #00ff48;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  border: 1px solid #00ff4187;
+}
+
+.refresh-icon {
+  transition: transform 0.5s ease;
+}
+
+.refresh-btn.refreshing .refresh-icon {
+  animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 表格容器 */
+.table-container {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+/* 隐藏默认滚动条 (Chrome, Safari) */
+.table-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* 历史记录表格 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .9rem;
+  table-layout: fixed;
+  background: rgba(15, 25, 35, 0.6);
+}
+
+th, td {
+  padding: 10px 8px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+th {
+  background: rgba(25, 40, 55, 0.8);
+  position: sticky;
+  top: 0;
+  font-weight: 500;
+  color: #ffa500;
+}
+
+tr:nth-child(even) {
+  background: rgba(20, 35, 50, 0.5);
+}
+
+tr:hover {
+  background: rgba(40, 60, 80, 0.7);
+}
+
+.empty-history {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
+
+/* 滚动指示器 */
+.scroll-indicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  z-index: 20;
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.scroll-track {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.scroll-thumb {
+  position: absolute;
+  right: 0;
+  width: 4px;
+  background: var(--led-on);
+  border-radius: 2px;
+  box-shadow: 0 0 4px var(--led-on);
+  transition: height 0.1s ease, top 0.1s ease;
+}
+
+.scroll-indicator:hover {
+  opacity: 1;
+}
+
+/* 底部导航栏 */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: radial-gradient(circle at center, var(--glass) 60%, #000 100%);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: #aaa;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+.nav-item:hover {
+  background: rgba(255, 165, 0, 0.1);
+  color: #ffa500;
+}
+
+.nav-item.active {
+  color: var(--led-on);
+  text-shadow: 0 0 5px var(--led-on);
+}
+
+.nav-icon {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.nav-text {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* 移动端适配 */
+@media (max-width: 800px) {
+  .container {
+    padding: 15px;
+  }
+  
+  .panel {
+    padding: 20px 10px 20px 2px;
+  }
+  
+  .bottom-nav {
+    
+    background: rgba(10, 15, 25, 0.95);
+    backdrop-filter: blur(5px);
+  }
+  
+  .nav-item {
+    
+    max-width: none;
+  }
+  
+  .nav-text {
+    font-size: 0.7rem;
+  }
+}
+
+/* 超大桌面端调整 */
+@media (min-width: 1024px) {
+  .nav-item {
+    max-width: 100px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="panel">
+    <div class="weight-display">
+      <div class="digits-box">
+        <span id="weight" class="led">0.00</span>
+      </div>
+      <span class="unit">kg</span>
+    </div>
+    
+    <div class="stable-group">
+      <span id="stableLamp" class="stable-lamp off"></span>
+      <span id="stableText" class="stable-text">稳定灯</span>
+    </div>
+  </div>
+  
+  <div class="status-indicator">
+    <span class="connection-dot connected"></span>
+    WebSocket 状态：<span id="wsStatus">演示模式</span>
+  </div>
+
+  <div class="history-section">
+    <div class="history-header">
+      <h3 class="history-title">最近称重记录</h3>
+      <button id="refreshBtn" class="refresh-btn">
+        <span class="refresh-icon">↻</span>
+        <span class="refresh-text">刷新记录</span>
+      </button>
+    </div>
+    
+    <div class="table-container" id="tableContainer">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%">商户号</th>
+            <th style="width: 45%">时间</th>
+            <th style="width: 30%">重量 (kg)</th>
+          </tr>
+        </thead>
+        <tbody id="history">
+          <tr class="empty-history">
+            <td colspan="3">暂无称重记录</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="scroll-indicator">
+        <div class="scroll-track"></div>
+        <div class="scroll-thumb" id="scrollThumb"></div>
+      </div>
+    </div>
+  </div>
+  
+  <nav class="bottom-nav">
+    <a href="#" class="nav-item active">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-text">首页</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-text">设备管理</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="nav-icon">ℹ️</span>
+      <span class="nav-text">我的</span>
+    </a>
+  </nav>
+</div>
+
+<script>
+// 配置参数
+const CONFIG = {
+  WS_URL: 'wss://yourdomain.com/yourPath',
+  DEMO_MODE: true,
+  MAX_HISTORY_ITEMS: 20,
+  UPDATE_INTERVAL: 800,
+  ROLL_STEPS: 20,
+  ROLL_DURATION: 30
+};
+
+// DOM 元素引用
+const elements = {
+  weight: document.getElementById('weight'),
+  stableLamp: document.getElementById('stableLamp'),
+  stableText: document.getElementById('stableText'),
+  wsStatus: document.getElementById('wsStatus'),
+  history: document.getElementById('history'),
+  refreshBtn: document.getElementById('refreshBtn'),
+  tableContainer: document.getElementById('tableContainer'),
+  scrollThumb: document.getElementById('scrollThumb')
+};
+
+// 状态管理
+const state = {
+  oldWeight: 0,
+  historyData: [],
+  isRefreshing: false
+};
+
+// 平滑滚动数字
+function rollTo(newWeight) {
+  const steps = CONFIG.ROLL_STEPS;
+  const duration = CONFIG.ROLL_DURATION;
+  const step = (newWeight - state.oldWeight) / steps;
+  let currentStep = 0;
+  
+  const tick = () => {
+    state.oldWeight += step;
+    elements.weight.textContent = state.oldWeight.toFixed(2);
+    if (++currentStep < steps) {
+      setTimeout(tick, duration);
+    } else {
+      state.oldWeight = newWeight;
+    }
+  };
+  
+  tick();
+}
+
+// 设置稳定指示灯状态
+function setStable(isStable) {
+  elements.stableLamp.className = `stable-lamp ${isStable ? 'on' : 'off'}`;
+  elements.stableText.className = `stable-text ${isStable ? 'on' : ''}`;
+}
+
+// 添加历史记录
+function addHistory(time, weight, user = 'A001') {
+  // 移除空记录提示
+  const emptyHistory = elements.history.querySelector('.empty-history');
+  if (emptyHistory) {
+    elements.history.removeChild(emptyHistory);
+  }
+  
+  // 添加到数据数组
+  state.historyData.unshift({ time, weight, user });
+  
+  // 限制历史记录数量
+  //if (state.historyData.length > CONFIG.MAX_HISTORY_ITEMS) {
+   // state.historyData.pop();
+  //}
+  
+  // 更新表格显示
+  renderHistoryTable();
+}
+
+// 渲染历史记录表格
+function renderHistoryTable() {
+  // 使用文档片段批量操作DOM
+  const fragment = document.createDocumentFragment();
+  
+  state.historyData.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.user}</td>
+      <td>${item.time}</td>
+      <td>${item.weight.toFixed(2)}</td>
+    `;
+    fragment.appendChild(tr);
+  });
+  
+  // 清空现有内容并添加新内容
+  elements.history.innerHTML = '';
+  elements.history.appendChild(fragment);
+  
+  // 如果没有数据，显示空状态
+  if (state.historyData.length === 0) {
+    const emptyRow = document.createElement('tr');
+    emptyRow.className = 'empty-history';
+    emptyRow.innerHTML = '<td colspan="3">暂无称重记录</td>';
+    elements.history.appendChild(emptyRow);
+  }
+  
+  // 更新滚动条位置
+  updateScrollbar();
+}
+
+// 刷新历史记录
+function refreshHistory() {
+  if (state.isRefreshing) return;
+  
+  state.isRefreshing = true;
+  elements.refreshBtn.classList.add('refreshing');
+  elements.refreshBtn.disabled = true;
+  
+  // 模拟刷新过程
+  setTimeout(() => {
+    // 实际应用中这里会请求服务器获取最新历史记录
+    renderHistoryTable();
+    
+    elements.refreshBtn.classList.remove('refreshing');
+    elements.refreshBtn.disabled = false;
+    state.isRefreshing = false;
+  }, 500);
+}
+
+// 更新自定义滚动条
+function updateScrollbar() {
+  const container = elements.tableContainer;
+  const thumb = elements.scrollThumb;
+
+  const scrollTop = container.scrollTop;
+  const scrollHeight = container.scrollHeight;
+  const clientHeight = container.clientHeight;
+
+  if (scrollHeight <= clientHeight) {
+    // 内容不足，隐藏滚动条
+    thumb.style.display = 'none';
+    return;
+  }
+
+  thumb.style.display = 'block';
+
+  const scrollRatio = scrollTop / (scrollHeight - clientHeight);
+  const thumbHeight = Math.max(20, (clientHeight / scrollHeight) * clientHeight);
+  const thumbTop = scrollRatio * (clientHeight - thumbHeight);
+
+  thumb.style.height = `${thumbHeight}px`;
+  thumb.style.top = `${thumbTop}px`;
+}
+
+// 设置自定义滚动条交互
+function setupCustomScrollbar() {
+  const container = elements.tableContainer;
+
+  // 关键：滚动时同步
+  container.addEventListener('scroll', updateScrollbar);
+
+  // 窗口变化也同步
+  window.addEventListener('resize', updateScrollbar);
+
+  // 内容变化也同步
+  const observer = new MutationObserver(() => {
+    requestAnimationFrame(updateScrollbar);
+  });
+  observer.observe(elements.history, {
+    childList: true,
+    subtree: true
+  });
+
+  // 初始同步
+  updateScrollbar();
+}
+
+// 底部导航栏交互
+function setupBottomNav() {
+  document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      // 移除所有项的活动状态
+      document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => {
+        nav.classList.remove('active');
+      });
+      // 为当前点击项添加活动状态
+      this.classList.add('active');
+    });
+  });
+}
+
+// 初始化页面
+function initPage() {
+  // 添加初始历史记录
+  for (let i = 0; i < 30; i++) {
+    const time = new Date(Date.now() - i * 60000).toLocaleString();
+    const weight = Math.random() * 1000;
+    addHistory(time, weight);
+  }
+  
+  // 绑定刷新按钮事件
+  elements.refreshBtn.addEventListener('click', refreshHistory);
+  
+  // 设置自定义滚动条
+  setupCustomScrollbar();
+  
+  // 设置底部导航栏交互
+  setupBottomNav();
+}
+
+// 数据连接逻辑
+function setupDataConnection() {
+  if (!CONFIG.DEMO_MODE) {
+    const ws = new WebSocket(CONFIG.WS_URL);
+    ws.onopen = () => elements.wsStatus.textContent = '已连接';
+    ws.onclose = () => elements.wsStatus.textContent = '断开';
+    ws.onmessage = e => {
+      const { weight, stable } = JSON.parse(e.data);
+      rollTo(weight);
+      setStable(stable);
+      addHistory(new Date().toLocaleString(), weight);
+    };
+    return ws;
+  } else {
+    elements.wsStatus.textContent = '演示模式';
+    setInterval(() => {
+      const weight = Math.round(Math.random() * 300000 * 100) / 100;
+      rollTo(weight);
+      setStable(Math.random() > 0.3);
+      addHistory(new Date().toLocaleString(), weight);
+    }, CONFIG.UPDATE_INTERVAL);
+    return null;
+  }
+}
+
+// 页面初始化
+initPage();
+const websocket = setupDataConnection();
+
+// 在页面卸载时关闭WebSocket连接
+window.addEventListener('beforeunload', () => {
+  if (websocket && websocket.readyState === WebSocket.OPEN) {
+    websocket.close();
+  }
+});
+</script>
+</body>
+</html>
